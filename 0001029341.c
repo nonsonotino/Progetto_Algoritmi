@@ -18,7 +18,7 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 #define CELLS_NUMBER (ROWS * COLS)
 
 /* Griglia di gioco. */
-int grid[ROWS][COLS];
+int starting_grid[ROWS][COLS];
 
 /* File di inizializzazione della griglia */
 const char *init_file_name = "test1.in";
@@ -94,9 +94,9 @@ void init_grid()
                 } while (input == '\n');
 
                 if (input == '.')
-                    grid[i][j] = 0;
+                    starting_grid[i][j] = BLACK_HOLE;
                 else if (input == '*')
-                    grid[i][j] = 1;
+                    starting_grid[i][j] = STAR;
             }
         }
     }
@@ -104,8 +104,9 @@ void init_grid()
     fclose(init_file);
 }
 
-/*TODO TOGLIERE
- */
+/*
+    TODO TOGLIERE, metodo per il debug, stampa della matrice
+*/
 void print_board(void)
 {
     int i, j, idx = 0;
@@ -114,7 +115,7 @@ void print_board(void)
     {
         for (j = 0; j < 3; j++)
         {
-            if (grid[i][j] == BLACK_HOLE)
+            if (starting_grid[i][j] == BLACK_HOLE)
             {
                 printf(". ");
             }
@@ -129,7 +130,32 @@ void print_board(void)
     printf("\n");
 }
 
-int main(void)
+/* Ritorna true (1) se la configurazione passata è vincente. */
+int check_win(int grid[ROWS][COLS])
+{
+    static const int winning_grid[ROWS][COLS] = {{1, 1, 1},
+                                                 {1, 0, 1},
+                                                 {1, 1, 1}};
+    int i, j;
+
+    for (i = 0; i < ROWS; i++)
+        for (j = 0; j < COLS; j++)
+            if (grid[i][j] != winning_grid[i][j])
+                return 0;
+
+    return 1;
+}
+
+/* Ritorna la posizione delle stelle nella configurazione passata. */
+
+
+/* Metodo per la ricerca della combinazione di mosse più corta per 
+   l'ottenimento di una combinazione vincente. */
+void BFS(int grid[ROWS][COLS])
+{
+}
+
+int main()
 {
     printf("Hello\n");
 
