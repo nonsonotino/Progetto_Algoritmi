@@ -5,7 +5,7 @@
  * Classe B
  */
 
-/* TODO: togliere, comando per compilazione
+/* TODO: TOGLIERE, comando per compilazione
 gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 */
 
@@ -81,6 +81,7 @@ void init_grid()
     if (init_file == NULL)
     {
         printf("Errore nell'apertura del file.");
+        return EXIT_FAILURE;
     }
     else
     {
@@ -107,7 +108,7 @@ void init_grid()
 /*
     TODO TOGLIERE, metodo per il debug, stampa della matrice
 */
-void print_board(void)
+void print_board(int grid[ROWS][COLS])
 {
     int i, j, idx = 0;
     printf("\n");
@@ -115,7 +116,7 @@ void print_board(void)
     {
         for (j = 0; j < 3; j++)
         {
-            if (starting_grid[i][j] == BLACK_HOLE)
+            if (grid[i][j] == BLACK_HOLE)
             {
                 printf(". ");
             }
@@ -161,7 +162,7 @@ int main()
 
     init_grid();
 
-    print_board();
+    print_board(starting_grid);
 
     return EXIT_SUCCESS;
 }
