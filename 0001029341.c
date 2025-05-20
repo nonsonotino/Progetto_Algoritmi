@@ -12,6 +12,10 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Si vuole risolvere il giovco passo passo, sfruttando una ricerda in ampiezza
+   BFS, osservando ogni possibile mossa nel gioco per poi ricostruire la sequenza
+   di mosse una volta trovata la prima configurazione vincente. */
+
 /* Dimensiodi della griglia di gioco e numero di celle. */
 #define ROWS 3
 #define COLS 3
@@ -30,6 +34,8 @@ enum
     BLACK_HOLE,
     STAR
 };
+
+/* Strutture dati per la soluzione della ricerca per ampiezza. */
 
 /* Vicini di ogni cella, 1 se la casella
    è vicina 0 altrimenti. */
@@ -140,17 +146,37 @@ int check_win(int grid[ROWS][COLS])
     int i, j;
 
     for (i = 0; i < ROWS; i++)
+    {
         for (j = 0; j < COLS; j++)
+        {
             if (grid[i][j] != winning_grid[i][j])
                 return 0;
+        }
+    }
+
+    return 1;
+}
+
+/* Ritorna true (1) se la configurazione passata è perdente. */
+int check_defeat(int grid[ROWS][COLS])
+{
+    int i, j;
+    for (i = 0; i < ROWS; i++)
+    {
+        for (j = 0; j < COLS; j++)
+        {
+            if(grid[i][j] == STAR)
+                return 0;
+        }
+    }
 
     return 1;
 }
 
 /* Ritorna la posizione delle stelle nella configurazione passata. */
+/*TODO*/
 
-
-/* Metodo per la ricerca della combinazione di mosse più corta per 
+/* Metodo per la ricerca della combinazione di mosse più corta per
    l'ottenimento di una combinazione vincente. */
 void BFS(int grid[ROWS][COLS])
 {
