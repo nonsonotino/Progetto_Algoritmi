@@ -12,14 +12,24 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Si vuole risolvere il giovco passo passo, sfruttando una ricerda in ampiezza
-   BFS, osservando ogni possibile mossa nel gioco per poi ricostruire la sequenza
-   di mosse una volta trovata la prima configurazione vincente. */
+/* Si vuole risolvere il gioco passo passo, sfruttando una ricerda in ampiezza
+   BFS, osservando ogni possibile mossa possibile per poi ricostruirne la sequenza
+   vincente una volta trovata la prima configurazione che rispetta tali condizioni
+   di vittoria. */
 
 /* Dimensiodi della griglia di gioco e numero di celle. */
 #define ROWS 3
 #define COLS 3
 #define CELLS_NUMBER (ROWS * COLS)
+
+/* Strutture dati per la soluzione della ricerca per ampiezza. */
+/* Nodo del grafo degli stati di gioco. */
+typedef struct GraphNode 
+{
+    int grid_state[ROWS][COLS];
+    GraphNode *father;
+    GraphNode **children;
+} GraphNode;
 
 /* Griglia di gioco. */
 int starting_grid[ROWS][COLS];
@@ -34,8 +44,6 @@ enum
     BLACK_HOLE,
     STAR
 };
-
-/* Strutture dati per la soluzione della ricerca per ampiezza. */
 
 /* Vicini di ogni cella, 1 se la casella
    è vicina 0 altrimenti. */
