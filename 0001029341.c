@@ -24,18 +24,18 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 
 /* Strutture dati per la soluzione della ricerca per ampiezza. */
 /* Nodo del grafo degli stati di gioco. */
-typedef struct GraphNode 
+typedef struct
 {
     int grid_state[ROWS][COLS];
-    GraphNode *father;
-    GraphNode **children;
+    struct GraphNode *father;
+    struct GraphNode **children;
 } GraphNode;
 
 /* Nodo della coda di ricerca BFS */
-typedef struct QueueNode
+typedef struct
 {
     GraphNode *node;
-    QueueNode *next;
+    struct QueueNode *next;
 } QueueNode;
 
 /* Coda per BFS */
@@ -57,6 +57,14 @@ enum
     BLACK_HOLE,
     STAR
 };
+
+/* Indica il risultato di una mossa. */
+typedef enum
+{
+    OK,
+    WON,
+    LOST
+} Move;
 
 /* Vicini di ogni cella, 1 se la casella
    è vicina 0 altrimenti. */
@@ -108,7 +116,6 @@ void init_grid()
     if (init_file == NULL)
     {
         printf("Errore nell'apertura del file.");
-        return EXIT_FAILURE;
     }
     else
     {
@@ -186,13 +193,15 @@ int check_defeat(int grid[ROWS][COLS])
     {
         for (j = 0; j < COLS; j++)
         {
-            if(grid[i][j] == STAR)
+            if (grid[i][j] == STAR)
                 return 0;
         }
     }
 
     return 1;
 }
+
+/* Fa esplodere la stella nella posizione k della griglia passata. */
 
 /* Ritorna la posizione delle stelle nella configurazione passata. */
 /*TODO*/
