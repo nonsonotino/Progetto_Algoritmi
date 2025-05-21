@@ -31,6 +31,19 @@ typedef struct GraphNode
     GraphNode **children;
 } GraphNode;
 
+/* Nodo della coda di ricerca BFS */
+typedef struct QueueNode
+{
+    GraphNode *node;
+    QueueNode *next;
+} QueueNode;
+
+/* Coda per BFS */
+typedef struct Queue
+{
+    QueueNode *head;
+} Queue;
+
 /* Griglia di gioco. */
 int starting_grid[ROWS][COLS];
 
