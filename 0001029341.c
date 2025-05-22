@@ -11,6 +11,7 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 /* Si vuole risolvere il gioco passo passo, sfruttando una ricerda in ampiezza
    BFS, osservando ogni possibile mossa possibile per poi ricostruirne la sequenza
@@ -201,6 +202,21 @@ int check_defeat(int grid[ROWS][COLS])
     return 1;
 }
 
+/* Inverte il contenuto della cella alle coordinate [i][j] nella
+   griglia passata. */
+void invert(int i, int j)
+{
+    assert(i >= 0 && i < ROWS);
+    assert(j >= 0 && j < COLS);
+    grid[i][j] = 1 - grid[i][j];/* TODO make pointer */
+}
+
+/* Shoot the specified cell of the game grid. */
+int shoot(int k)
+{
+    
+}
+
 /* Fa esplodere la stella nella posizione k della griglia passata. */
 
 /* Ritorna la posizione delle stelle nella configurazione passata. */
@@ -210,6 +226,7 @@ int check_defeat(int grid[ROWS][COLS])
    l'ottenimento di una combinazione vincente. */
 void BFS(int grid[ROWS][COLS])
 {
+
 }
 
 int main()
