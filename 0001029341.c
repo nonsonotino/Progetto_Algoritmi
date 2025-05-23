@@ -28,7 +28,8 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 typedef struct
 {
     int grid_state[ROWS][COLS];
-    struct TreeNode **children;
+    int move; /* Mossa che ha dato la struttura corrente. */
+    struct TreeNode *father;
 } TreeNode;
 
 /* Nodo della coda di ricerca BFS */
@@ -151,6 +152,71 @@ void list_destroy(List *L)
     free(L);
 }
 
+/* Concatena due nodi `pred` e `succ`: `succ` diventa il successore di
+   `pred`. */
+static void list_join(ListNode *pred, ListNode *succ)
+{
+    assert(pred != NULL);
+    assert(succ != NULL);
+
+    pred->succ = succ;
+    succ->pred = pred;
+}
+
+/* Crea un nuovo nodo contenente k, e lo inserisce immediatamente dopo
+   il nodo n di L */
+static void list_insert_after(List *L, ListNode *n, TreeNode *k)
+{
+    ListNode *new_node, *succ_of_n;
+    assert(L != NULL);
+    assert(n != NULL);
+
+#if 1
+    new_node = list_new_node(k);
+    succ_of_n = list_succ(n);
+    list_join(n, new_node);
+    list_join(new_node, succ_of_n);
+#else
+    /* volendo realizzare questa funzione totalmente "a mano", senza
+       usare altre funzioni di utilità definite in questo file, si può
+       procedere come segue. */
+    succ_of_n = n->succ;
+    new_node = (ListNode*)malloc(sizeof(ListNode));
+    assert(new_node != NULL);
+    new_node->val = k;
+    new_node->pred = n;
+    new_node->succ = succ_of_n;
+    n->succ = new_node;
+    succ_of_n->pred = new_node;
+#endif
+    L->length++;
+}
+
+/* Inserisce un nuovo nodo contenente k alla fine della lista */
+void list_add_last(List *L, TreeNode *k)
+{
+    assert(L != NULL);
+    list_insert_after(L, L->sentinel->pred, k);
+}
+
+/* Rimuove il nodo n dalla lista L */
+void list_remove(List *L, ListNode *n)
+{
+    assert(L != NULL);
+    assert(n != NULL);
+    assert(n != list_end(L));
+    list_join(list_pred(n), list_succ(n));
+    free(n);
+    L->length--;
+}
+
+ListNode *list_first(const List *L)
+{
+    assert(L != NULL);
+
+    return L->sentinel->succ;
+}
+
 /* Inizializza la griglia secondo quanto specificato
    nel file di inizializzazione. */
 void init_grid()
@@ -255,6 +321,8 @@ void invert(int i, int j)
     assert(j >= 0 && j < COLS);
 }
 
+
+
 /* Shoot the specified cell of the game grid. */
 int shoot(int k)
 {
@@ -268,9 +336,49 @@ int shoot(int k)
 
 /* Metodo per la ricerca della combinazione di mosse più corta per
    l'ottenimento di una combinazione vincente. */
-void BFS(TreeNode *root)
+int BFS(TreeNode *root)
 {
+    /* Crea */
+    List *queue = list_create();
 
+    /*append first node*/
+    list_add_last(queue, root);
+
+    while (queue->length > 0)
+    {
+        ListNode *current_node = list_first(queue);
+        TreeNode *current_tree_node = current_node->val;
+
+        if(check_win(current_tree_node->grid_state))
+        {
+            while(current_tree_node->father != NULL)
+            {
+                printf("%d ", current_tree_node->move);
+                current_tree_node = current_tree_node->father;
+            }
+
+            return 1; /* Found winnig path. */
+        }
+        else if(check_defeat(current_tree_node->grid_state))
+        {
+            list_remove(queue, current_node);
+        }
+        else
+        {
+            
+        }
+    }
+    
+    return -1; /* No winning path found. */
+    /*cycle nodes*/
+    /*check if node is winning*/
+    /*if it is winning find all fathers recoursively and print each move*/
+    /*if losing dequeue and continue*/
+    /*if neither find all stars*/
+    /*explode each and create a new node for each move and append*/
+    /*dequeue this node and continue*/
+
+    /*if it ends without wnning return -1*/
 }
 
 int main()
