@@ -28,22 +28,20 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 typedef struct
 {
     int grid_state[ROWS][COLS];
-    struct GraphNode *father;
-    struct GraphNode **children;
-} GraphNode;
+    struct TreeNode **children;
+} TreeNode;
 
 /* Nodo della coda di ricerca BFS */
-typedef struct
-{
-    GraphNode *node;
-    struct QueueNode *next;
-} QueueNode;
+typedef struct ListNode {
+    TreeNode *val;
+    struct ListNode *succ, *pred;
+} ListNode;
 
 /* Coda per BFS */
-typedef struct Queue
-{
-    QueueNode *head;
-} Queue;
+typedef struct {
+    int length;
+    ListNode *sentinel;
+} List;
 
 /* Griglia di gioco. */
 int starting_grid[ROWS][COLS];
@@ -104,7 +102,54 @@ int neighbours[CELLS_NUMBER][ROWS][COLS] = {
 
     {{0, 0, 0}, /* cella 8 con il suo vicinato 	*/
      {0, 1, 1},
-     {0, 1, 1}}};
+     {0, 1, 1}}
+};
+
+/* Funzioni per la gestione delle liste. */
+/* Crea un nuovo nodo della lista. */
+static ListNode *list_new_node(TreeNode *v)
+{
+    ListNode *new_node = (ListNode *)malloc(sizeof(ListNode));
+    assert(new_node != NULL);
+    new_node->val = v;
+    new_node->succ = new_node->pred = new_node;
+    return new_node;
+}
+
+/* Crea una nuova lista (vuota). */
+List *list_create(void)
+{
+    List *L = (List *)malloc(sizeof(List));
+    assert(L != NULL);
+    L->length = 0;
+    L->sentinel = list_new_node(NULL); /* il valore contenuto nel nodo sentinella è irrilevante */
+    return L;
+}
+
+/* Svuota lista e libera la memoria occupata dai suoi elementi. */
+void list_clear(List *L)
+{
+    ListNode *node;
+    assert(L != NULL);
+    node = L->sentinel->succ;
+    while (node != L->sentinel)
+    {
+        ListNode *succ = node->succ;
+        free(node);
+        node = succ;
+    }
+    L->length = 0;
+    L->sentinel->pred = L->sentinel->succ = L->sentinel;
+}
+
+/* Libera la lista e libera la memoria da essa occupata. */
+void list_destroy(List *L)
+{
+    assert(L != NULL);
+    list_clear(L);
+    free(L->sentinel);
+    free(L);
+}
 
 /* Inizializza la griglia secondo quanto specificato
    nel file di inizializzazione. */
@@ -208,7 +253,6 @@ void invert(int i, int j)
 {
     assert(i >= 0 && i < ROWS);
     assert(j >= 0 && j < COLS);
-    grid[i][j] = 1 - grid[i][j];/* TODO make pointer */
 }
 
 /* Shoot the specified cell of the game grid. */
@@ -224,7 +268,7 @@ int shoot(int k)
 
 /* Metodo per la ricerca della combinazione di mosse più corta per
    l'ottenimento di una combinazione vincente. */
-void BFS(int grid[ROWS][COLS])
+void BFS(TreeNode *root)
 {
 
 }
