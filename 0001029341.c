@@ -23,6 +23,9 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 #define COLS 3
 #define CELLS_NUMBER (ROWS * COLS)
 
+/* File di inizializzazione della griglia */
+const char *init_file_name = "test1.in";
+
 /* Strutture dati per la soluzione della ricerca per ampiezza. */
 /* Nodo del grafo degli stati di gioco. */
 typedef struct
@@ -44,11 +47,15 @@ typedef struct {
     ListNode *sentinel;
 } List;
 
+/* Listacontenente le posizioni delle stelle trovate, ovvero tutte le mosse possibili. */
+typedef struct {
+    int *position;
+    int dimension;
+    int capacity;
+} starList;
+
 /* Griglia di gioco. */
 int starting_grid[ROWS][COLS];
-
-/* File di inizializzazione della griglia */
-const char *init_file_name = "test1.in";
 
 /* Indicatore del contenuto di una cella,
    0 se questa è un buco nero, 1 se è una stella. */
@@ -125,6 +132,29 @@ List *list_create(void)
     L->length = 0;
     L->sentinel = list_new_node(NULL); /* il valore contenuto nel nodo sentinella è irrilevante */
     return L;
+}
+
+/* Restituisce l'indirizzo di memoria della sentinella di `L`. */
+ListNode *list_end(const List *L)
+{
+    assert(L != NULL);
+    return L->sentinel;
+}
+
+/* Restituisce il nodo della lista successivo a quello fornito. */
+ListNode *list_succ(const ListNode *n)
+{
+    assert(n != NULL);
+
+    return n->succ;
+}
+
+/* Restituisce il nodo della lista precedente a quello fornito. */
+ListNode *list_pred(const ListNode *n)
+{
+    assert(n != NULL);
+
+    return n->pred;
 }
 
 /* Svuota lista e libera la memoria occupata dai suoi elementi. */
@@ -313,6 +343,8 @@ int check_defeat(int grid[ROWS][COLS])
     return 1;
 }
 
+
+
 /* Inverte il contenuto della cella alle coordinate [i][j] nella
    griglia passata. */
 void invert(int i, int j)
@@ -320,8 +352,6 @@ void invert(int i, int j)
     assert(i >= 0 && i < ROWS);
     assert(j >= 0 && j < COLS);
 }
-
-
 
 /* Shoot the specified cell of the game grid. */
 int shoot(int k)
@@ -381,9 +411,9 @@ int BFS(TreeNode *root)
     /*if it ends without wnning return -1*/
 }
 
-int main()
+int main(int argc, char **argv)
 {
-    printf("Hello\n");
+    printf(argc);
 
     init_grid();
 
