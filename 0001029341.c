@@ -23,9 +23,6 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 #define COLS 3
 #define CELLS_NUMBER (ROWS * COLS)
 
-/* File di inizializzazione della griglia */
-const char *init_file_name = "test1.in";
-
 /* Strutture dati per la soluzione della ricerca per ampiezza. */
 /* Nodo del grafo degli stati di gioco. */
 typedef struct
@@ -36,19 +33,22 @@ typedef struct
 } TreeNode;
 
 /* Nodo della coda di ricerca BFS */
-typedef struct ListNode {
+typedef struct ListNode
+{
     TreeNode *val;
     struct ListNode *succ, *pred;
 } ListNode;
 
 /* Coda per BFS */
-typedef struct {
+typedef struct
+{
     int length;
     ListNode *sentinel;
 } List;
 
 /* Listacontenente le posizioni delle stelle trovate, ovvero tutte le mosse possibili. */
-typedef struct {
+typedef struct
+{
     int *position;
     int dimension;
     int capacity;
@@ -110,8 +110,7 @@ int neighbours[CELLS_NUMBER][ROWS][COLS] = {
 
     {{0, 0, 0}, /* cella 8 con il suo vicinato 	*/
      {0, 1, 1},
-     {0, 1, 1}}
-};
+     {0, 1, 1}}};
 
 /* Funzioni per la gestione delle liste. */
 /* Crea un nuovo nodo della lista. */
@@ -211,7 +210,7 @@ static void list_insert_after(List *L, ListNode *n, TreeNode *k)
        usare altre funzioni di utilità definite in questo file, si può
        procedere come segue. */
     succ_of_n = n->succ;
-    new_node = (ListNode*)malloc(sizeof(ListNode));
+    new_node = (ListNode *)malloc(sizeof(ListNode));
     assert(new_node != NULL);
     new_node->val = k;
     new_node->pred = n;
@@ -249,7 +248,7 @@ ListNode *list_first(const List *L)
 
 /* Inizializza la griglia secondo quanto specificato
    nel file di inizializzazione. */
-void init_grid()
+void init_grid(const char *init_file_name)
 {
     FILE *init_file = fopen(init_file_name, "r");
     int i, j;
@@ -343,20 +342,61 @@ int check_defeat(int grid[ROWS][COLS])
     return 1;
 }
 
+int find_stars(int grid[ROWS][COLS], int *positions)
+{
+    int i, j, c = 0;
 
+    for(i = 0; i < ROWS; i++)
+    {
+        for(j = 0; j < COLS; j++)
+        {
+            if(grid[i][j] == STAR)
+            {
+                positions[c] = i * COLS + j; /* Calcola la posizione lineare */
+                c += 1;
+            }
+        }
+    }
+
+    return c;
+}
+
+/* Copia il contenuto della matrice src nella matrice dest. */
+void copyMatrix(int src[ROWS][COLS], int dest[ROWS][COLS])
+{
+    int i, j;
+    for (i = 0; i < ROWS; i++)
+    {
+        for (j = 0; j < COLS; j++)
+        {
+            dest[i][j] = src[i][j];
+        }
+    }
+}
 
 /* Inverte il contenuto della cella alle coordinate [i][j] nella
    griglia passata. */
-void invert(int i, int j)
+void swap(int i, int j, int grid[ROWS][COLS])
 {
     assert(i >= 0 && i < ROWS);
     assert(j >= 0 && j < COLS);
 }
 
-/* Shoot the specified cell of the game grid. */
-int shoot(int k)
+/* Spara sulla casella selezionata nella griglia passata. */
+int shoot(int k, int grid[ROWS][COLS])
 {
-    
+    const int row = k / 3;
+    const int col = k % 3;
+    int i, j;
+
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
+            if (neighbours[k][i][j])
+                swap(i, j, grid);
+        }
+    }
 }
 
 /* Fa esplodere la stella nella posizione k della griglia passata. */
@@ -379,9 +419,9 @@ int BFS(TreeNode *root)
         ListNode *current_node = list_first(queue);
         TreeNode *current_tree_node = current_node->val;
 
-        if(check_win(current_tree_node->grid_state))
+        if (check_win(current_tree_node->grid_state))
         {
-            while(current_tree_node->father != NULL)
+            while (current_tree_node->father != NULL)
             {
                 printf("%d ", current_tree_node->move);
                 current_tree_node = current_tree_node->father;
@@ -389,16 +429,17 @@ int BFS(TreeNode *root)
 
             return 1; /* Found winnig path. */
         }
-        else if(check_defeat(current_tree_node->grid_state))
+        else if (check_defeat(current_tree_node->grid_state))
         {
             list_remove(queue, current_node);
         }
         else
         {
-            
+            int * stars;
+            int stars_number = find_stars(current_tree_node->grid_state, current_tree_node->move);
         }
     }
-    
+
     return -1; /* No winning path found. */
     /*cycle nodes*/
     /*check if node is winning*/
@@ -413,11 +454,19 @@ int BFS(TreeNode *root)
 
 int main(int argc, char **argv)
 {
-    printf(argc);
+    /* Lettura del nome del file di input passato da console. */
+    init_grid(argv[1]);
 
-    init_grid();
+    TreeNode *root = (TreeNode *)malloc(sizeof(TreeNode));
+    root->father = NULL;
+    root->move = -1; /* La radice non ha una mossa associata. */
+    copyMatrix(starting_grid, root->grid_state);
 
+    BFS(root);
+
+    /* TODO tolgiere */
     print_board(starting_grid);
+    getchar();
 
     return EXIT_SUCCESS;
 }
