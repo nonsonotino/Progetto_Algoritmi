@@ -221,14 +221,14 @@ static void list_insert_after(List *L, ListNode *n, TreeNode *k)
     L->length++;
 }
 
-/* Inserisce un nuovo nodo contenente k alla fine della lista */
+/* Inserisce un nuovo nodo contenente k alla fine della lista. */
 void list_add_last(List *L, TreeNode *k)
 {
     assert(L != NULL);
     list_insert_after(L, L->sentinel->pred, k);
 }
 
-/* Rimuove il nodo n dalla lista L */
+/* Rimuove il nodo n dalla lista L. */
 void list_remove(List *L, ListNode *n)
 {
     assert(L != NULL);
@@ -239,6 +239,7 @@ void list_remove(List *L, ListNode *n)
     L->length--;
 }
 
+/* Ritorna il primo elemento della lista passata in input. */
 ListNode *list_first(const List *L)
 {
     assert(L != NULL);
@@ -342,25 +343,6 @@ int check_defeat(int grid[ROWS][COLS])
     return 1;
 }
 
-int find_stars(int grid[ROWS][COLS], int *positions)
-{
-    int i, j, c = 0;
-
-    for(i = 0; i < ROWS; i++)
-    {
-        for(j = 0; j < COLS; j++)
-        {
-            if(grid[i][j] == STAR)
-            {
-                positions[c] = i * COLS + j; /* Calcola la posizione lineare */
-                c += 1;
-            }
-        }
-    }
-
-    return c;
-}
-
 /* Copia il contenuto della matrice src nella matrice dest. */
 void copyMatrix(int src[ROWS][COLS], int dest[ROWS][COLS])
 {
@@ -402,28 +384,49 @@ int shoot(int k, int grid[ROWS][COLS])
 /* Fa esplodere la stella nella posizione k della griglia passata. */
 
 /* Ritorna la posizione delle stelle nella configurazione passata. */
+int find_stars(int grid[ROWS][COLS], int *positions)
+{
+    int i, j, c = 0;
+
+    for(i = 0; i < ROWS; i++)
+    {
+        for(j = 0; j < COLS; j++)
+        {
+            if(grid[i][j] == STAR)
+            {
+                positions[c] = i * COLS + j; /* Calcola la posizione lineare */
+                c += 1;
+            }
+        }
+    }
+
+    return c;
+}
 /*TODO*/
 
 /* Metodo per la ricerca della combinazione di mosse più corta per
    l'ottenimento di una combinazione vincente. */
 int BFS(TreeNode *root)
 {
-    /* Crea */
+    /* Crea lista. */
     List *queue = list_create();
 
-    /*append first node*/
+    /*Inizializzazione variabili di supporto per lavorazione dati. */
+    ListNode *current_node;
+    TreeNode *current_tree_node;
+
     list_add_last(queue, root);
 
     while (queue->length > 0)
     {
-        ListNode *current_node = list_first(queue);
-        TreeNode *current_tree_node = current_node->val;
+        current_node = list_first(queue);
+        current_tree_node = current_node->val;
 
         if (check_win(current_tree_node->grid_state))
         {
             while (current_tree_node->father != NULL)
             {
-                printf("%d ", current_tree_node->move);
+                printf("%d", current_tree_node->move);
                 current_tree_node = current_tree_node->father;
             }
 
@@ -435,7 +438,7 @@ int BFS(TreeNode *root)
         }
         else
         {
-            int * stars;
+            int *stars;
             int stars_number = find_stars(current_tree_node->grid_state, current_tree_node->move);
         }
     }
@@ -454,10 +457,13 @@ int BFS(TreeNode *root)
 
 int main(int argc, char **argv)
 {
+    /* Inizializzazione nodo radice dell'albero da esplorare*/
+    TreeNode *root;
+
     /* Lettura del nome del file di input passato da console. */
     init_grid(argv[1]);
 
-    TreeNode *root = (TreeNode *)malloc(sizeof(TreeNode));
+    root = (TreeNode *)malloc(sizeof(TreeNode));
     root->father = NULL;
     root->move = -1; /* La radice non ha una mossa associata. */
     copyMatrix(starting_grid, root->grid_state);
