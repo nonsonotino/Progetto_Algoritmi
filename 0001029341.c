@@ -27,7 +27,7 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 /* Nodo del grafo degli stati di gioco. */
 typedef struct
 {
-    int grid_state[ROWS][COLS];
+    int **grid_state;
     int move; /* Mossa che ha dato la struttura corrente. */
     struct TreeNode *father;
 } TreeNode;
@@ -45,17 +45,6 @@ typedef struct
     int length;
     ListNode *sentinel;
 } List;
-
-/* Listacontenente le posizioni delle stelle trovate, ovvero tutte le mosse possibili. */
-typedef struct
-{
-    int *position;
-    int dimension;
-    int capacity;
-} starList;
-
-/* Griglia di gioco. */
-int starting_grid[ROWS][COLS];
 
 /* Indicatore del contenuto di una cella,
    0 se questa è un buco nero, 1 se è una stella. */
@@ -247,11 +236,43 @@ ListNode *list_first(const List *L)
     return L->sentinel->succ;
 }
 
+/* Alloca e ritona una nuova matrice 3x3. */
+int **allocateMatrix()
+{
+    int i;
+    int **new_matrix = (int **)malloc(sizeof(int *) * ROWS);
+
+    for (i =0; i < ROWS; i++)
+    {
+        new_matrix[i] = (int *)malloc(sizeof(int) * COLS);
+    }
+
+    return new_matrix;
+}
+
+/* Copia il contenuto della matrice src nella matrice dest. */
+int **copy_matrix(int** src)
+{
+    int i, j;
+    int **dest = allocateMatrix();
+    for (i = 0; i < ROWS; i++)
+    {
+        for (j = 0; j < COLS; j++)
+        {
+            dest[i][j] = src[i][j];
+        }
+    }
+
+    return dest;
+}
+
+
 /* Inizializza la griglia secondo quanto specificato
    nel file di inizializzazione. */
-void init_grid(const char *init_file_name)
+int **init_grid(const char *init_file_name)
 {
     FILE *init_file = fopen(init_file_name, "r");
+    int **grid = allocateMatrix();
     int i, j;
     char input;
 
@@ -271,44 +292,19 @@ void init_grid(const char *init_file_name)
                 } while (input == '\n');
 
                 if (input == '.')
-                    starting_grid[i][j] = BLACK_HOLE;
+                    grid[i][j] = BLACK_HOLE;
                 else if (input == '*')
-                    starting_grid[i][j] = STAR;
+                    grid[i][j] = STAR;
             }
         }
     }
 
     fclose(init_file);
-}
-
-/*
-    TODO TOGLIERE, metodo per il debug, stampa della matrice
-*/
-void print_board(int grid[ROWS][COLS])
-{
-    int i, j, idx = 0;
-    printf("\n");
-    for (i = 0; i < 3; i++)
-    {
-        for (j = 0; j < 3; j++)
-        {
-            if (grid[i][j] == BLACK_HOLE)
-            {
-                printf(". ");
-            }
-            else
-            {
-                printf("%d ", idx);
-            }
-            idx++;
-        }
-        printf("\n\n");
-    }
-    printf("\n");
+    return grid;
 }
 
 /* Ritorna true (1) se la configurazione passata è vincente. */
-int check_win(int grid[ROWS][COLS])
+int check_win(int **grid)
 {
     static const int winning_grid[ROWS][COLS] = {{1, 1, 1},
                                                  {1, 0, 1},
@@ -328,14 +324,14 @@ int check_win(int grid[ROWS][COLS])
 }
 
 /* Ritorna true (1) se la configurazione passata è perdente. */
-int check_defeat(int grid[ROWS][COLS])
+int check_defeat(int **grid)
 {
     int i, j;
     for (i = 0; i < ROWS; i++)
     {
         for (j = 0; j < COLS; j++)
         {
-            if (grid[i][j] == STAR)
+            if (grid[i][j] == BLACK_HOLE)
                 return 0;
         }
     }
@@ -343,66 +339,69 @@ int check_defeat(int grid[ROWS][COLS])
     return 1;
 }
 
-/* Copia il contenuto della matrice src nella matrice dest. */
-void copyMatrix(int src[ROWS][COLS], int dest[ROWS][COLS])
+/* Inverte il contenuto della cella alle coordinate [i][j] nella
+   griglia passata. */
+void swap(int i, int j, int **grid)
 {
+    assert(i >= 0 && i < ROWS);
+    assert(j >= 0 && j < COLS);
+    grid[i][j] = 1 - grid[i][j];
+}
+
+/* Spara sulla casella selezionata nella griglia passata. */
+int **shoot(int k, int **grid)
+{
+    int **new_grid = copy_matrix(grid);
+    const int row = k / ROWS;
+    const int col = k % COLS;
     int i, j;
+
     for (i = 0; i < ROWS; i++)
     {
         for (j = 0; j < COLS; j++)
         {
-            dest[i][j] = src[i][j];
-        }
-    }
-}
-
-/* Inverte il contenuto della cella alle coordinate [i][j] nella
-   griglia passata. */
-void swap(int i, int j, int grid[ROWS][COLS])
-{
-    assert(i >= 0 && i < ROWS);
-    assert(j >= 0 && j < COLS);
-}
-
-/* Spara sulla casella selezionata nella griglia passata. */
-int shoot(int k, int grid[ROWS][COLS])
-{
-    const int row = k / 3;
-    const int col = k % 3;
-    int i, j;
-
-    for (i = 0; i < 3; i++)
-    {
-        for (j = 0; j < 3; j++)
-        {
             if (neighbours[k][i][j])
-                swap(i, j, grid);
+            {
+                swap(i, j, new_grid);
+            }
         }
     }
+
+    return new_grid;
 }
 
 /* Fa esplodere la stella nella posizione k della griglia passata. */
 
 /* Ritorna la posizione delle stelle nella configurazione passata. */
-int find_stars(int grid[ROWS][COLS], int *positions)
+int *find_stars(int **grid)
 {
+    /* Array dinamico contenente le posizioni delle stelle trovate. */
+    int *stars = (int*)malloc(sizeof(int) * ROWS * COLS);
+
+    /* Contatori di supporto. */
     int i, j, c = 0;
 
+    /* Inizializzazione dell'array con valori non significativi. */
+    for (i = 0; i < ROWS * COLS; i++)
+    {
+        stars[i] = -1;
+    }
+
+    /* Scansione della griglia per trovare le stelle. */
     for(i = 0; i < ROWS; i++)
     {
         for(j = 0; j < COLS; j++)
         {
             if(grid[i][j] == STAR)
             {
-                positions[c] = i * COLS + j; /* Calcola la posizione lineare */
+                stars[c] = i * COLS + j; /* Calcola la posizione lineare */
                 c += 1;
             }
         }
     }
 
-    return c;
+    return stars;
 }
-/*TODO*/
 
 /* Metodo per la ricerca della combinazione di mosse più corta per
    l'ottenimento di una combinazione vincente. */
@@ -414,6 +413,11 @@ int BFS(TreeNode *root)
     /*Inizializzazione variabili di supporto per lavorazione dati. */
     ListNode *current_node;
     TreeNode *current_tree_node;
+    TreeNode *new_tree_node;
+    int *stars;
+    
+    /* Inizializzazione contatori. */
+    int i;
 
     list_add_last(queue, root);
 
@@ -426,7 +430,7 @@ int BFS(TreeNode *root)
         {
             while (current_tree_node->father != NULL)
             {
-                printf("%d", current_tree_node->move);
+                printf("%d\n", current_tree_node->move);
                 current_tree_node = current_tree_node->father;
             }
 
@@ -438,16 +442,30 @@ int BFS(TreeNode *root)
         }
         else
         {
-            int *stars;
-            int stars_number = find_stars(current_tree_node->grid_state, current_tree_node->move);
+            stars = find_stars(current_tree_node->grid_state);
+
+            for(i = 0; stars[i] != -1; i++)
+            {
+                new_tree_node = (TreeNode *)malloc(sizeof(TreeNode));
+                new_tree_node->father = current_tree_node;
+                new_tree_node->move = stars[i];
+                new_tree_node->grid_state = shoot(stars[i], current_tree_node->grid_state);
+
+                list_add_last(queue, new_tree_node);
+            }
+
+            list_remove(queue, current_node);
         }
     }
+
+    printf("%d", -1);
 
     return -1; /* No winning path found. */
     /*cycle nodes*/
     /*check if node is winning*/
     /*if it is winning find all fathers recoursively and print each move*/
     /*if losing dequeue and continue*/
+    
     /*if neither find all stars*/
     /*explode each and create a new node for each move and append*/
     /*dequeue this node and continue*/
@@ -460,19 +478,15 @@ int main(int argc, char **argv)
     /* Inizializzazione nodo radice dell'albero da esplorare*/
     TreeNode *root;
 
-    /* Lettura del nome del file di input passato da console. */
-    init_grid(argv[1]);
+    /* Inizializzazione dello stato iniziale del gioco. */
+    int **starting_grid = init_grid(argv[1]);
 
     root = (TreeNode *)malloc(sizeof(TreeNode));
     root->father = NULL;
     root->move = -1; /* La radice non ha una mossa associata. */
-    copyMatrix(starting_grid, root->grid_state);
+    root->grid_state = copy_matrix(starting_grid);
 
     BFS(root);
-
-    /* TODO tolgiere */
-    print_board(starting_grid);
-    getchar();
 
     return EXIT_SUCCESS;
 }
