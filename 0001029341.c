@@ -25,7 +25,7 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 
 /* Strutture dati per la soluzione della ricerca per ampiezza. */
 /* Nodo del grafo degli stati di gioco. */
-typedef struct
+typedef struct TreeNode
 {
     int **grid_state;
     int move; /* Mossa che ha dato la struttura corrente. */
@@ -352,8 +352,6 @@ void swap(int i, int j, int **grid)
 int **shoot(int k, int **grid)
 {
     int **new_grid = copy_matrix(grid);
-    const int row = k / ROWS;
-    const int col = k % COLS;
     int i, j;
 
     for (i = 0; i < ROWS; i++)
