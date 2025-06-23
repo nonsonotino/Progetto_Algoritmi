@@ -23,6 +23,11 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 #define COLS 3
 #define CELLS_NUMBER (ROWS * COLS)
 
+/* Definizione struct. */
+struct TreeNode;
+struct List;
+struct ListNode;
+
 /* Strutture dati per la soluzione della ricerca per ampiezza. */
 /* Nodo del grafo degli stati di gioco. */
 typedef struct TreeNode
@@ -30,6 +35,7 @@ typedef struct TreeNode
     int **grid_state;
     int move; /* Mossa che ha dato la struttura corrente. */
     struct TreeNode *father;
+    struct List *children; /* Lista dei figli di questo nodo. */
 } TreeNode;
 
 /* Nodo della coda di ricerca BFS */
@@ -40,7 +46,7 @@ typedef struct ListNode
 } ListNode;
 
 /* Coda per BFS */
-typedef struct
+typedef struct List
 {
     int length;
     ListNode *sentinel;
@@ -99,7 +105,8 @@ int neighbours[CELLS_NUMBER][ROWS][COLS] = {
 
     {{0, 0, 0}, /* cella 8 con il suo vicinato 	*/
      {0, 1, 1},
-     {0, 1, 1}}};
+     {0, 1, 1}}
+};
 
 /* Funzioni per la gestione delle liste. */
 /* Crea un nuovo nodo della lista. */
@@ -120,6 +127,14 @@ List *list_create(void)
     L->length = 0;
     L->sentinel = list_new_node(NULL); /* il valore contenuto nel nodo sentinella è irrilevante */
     return L;
+}
+
+/* Ritorna il primo elemento della lista passata. */
+ListNode *list_first(const List *L)
+{
+    assert(L != NULL);
+
+    return L->sentinel->succ;
 }
 
 /* Restituisce l'indirizzo di memoria della sentinella di `L`. */
@@ -228,14 +243,6 @@ void list_remove(List *L, ListNode *n)
     L->length--;
 }
 
-/* Ritorna il primo elemento della lista passata in input. */
-ListNode *list_first(const List *L)
-{
-    assert(L != NULL);
-
-    return L->sentinel->succ;
-}
-
 /* Alloca e ritona una nuova matrice 3x3. */
 int **allocateMatrix()
 {
@@ -266,6 +273,35 @@ int **copy_matrix(int** src)
     return dest;
 }
 
+/* Libera la memoria assegnata alla matrice passata in argomento. */
+void free_matrix(int **matrix)
+{
+    int i;
+    for (i = 0; i < ROWS; i++)
+    {
+        free(matrix[i]);
+    }
+    free(matrix);
+}
+
+/* Libera memoria relativa all'albero. */
+void tree_destroy(TreeNode *root)
+{
+    if (root == NULL)
+        return;
+    
+    while (root->children->length > 0)
+    {
+        ListNode *child_node = list_first(root->children);
+        TreeNode *child = child_node->val;
+        list_remove(root->children, child_node);
+        tree_destroy(child);
+    }
+
+    free_matrix(root->grid_state);
+    list_destroy(root->children);
+    free(root);
+}
 
 /* Inizializza la griglia secondo quanto specificato
    nel file di inizializzazione. */
@@ -413,9 +449,11 @@ int BFS(TreeNode *root)
     TreeNode *current_tree_node;
     TreeNode *new_tree_node;
     int *stars;
+    char *move_sequence;
+    int string_capacity = 100; /* Dimensione iniziale della stringa per la sequenza di mosse. */
     
     /* Inizializzazione contatori. */
-    int i;
+    int i, k;
 
     list_add_last(queue, root);
 
@@ -426,11 +464,27 @@ int BFS(TreeNode *root)
 
         if (check_win(current_tree_node->grid_state))
         {
-            while (current_tree_node->father != NULL)
+            move_sequence = (char *)malloc(sizeof(char) * string_capacity);
+
+            for (i = 0; current_tree_node->father != NULL; i++)
             {
-                printf("%d\n", current_tree_node->move);
+                if(i + 1 <= string_capacity)
+                {
+                    string_capacity *= 2; /* Raddoppia la capacità della stringa per le mosse. */
+                    move_sequence = (char *)realloc(move_sequence, sizeof(char) * string_capacity);
+                }
+
+                move_sequence[i] = current_tree_node->move; /* Converte l'indice della mossa in carattere. */
                 current_tree_node = current_tree_node->father;
             }
+
+            for (k = 0; k < i; k++)
+            {
+                printf("%d\n", move_sequence[i - k - 1]); /* Stampa le mosse in ordine inverso. */
+            }
+            
+            free(move_sequence);
+            list_destroy(queue);
 
             return 1; /* Found winnig path. */
         }
@@ -448,15 +502,19 @@ int BFS(TreeNode *root)
                 new_tree_node->father = current_tree_node;
                 new_tree_node->move = stars[i];
                 new_tree_node->grid_state = shoot(stars[i], current_tree_node->grid_state);
+                new_tree_node->children = list_create();
+                list_add_last(current_tree_node->children, new_tree_node);
 
                 list_add_last(queue, new_tree_node);
             }
 
+            free(stars);
             list_remove(queue, current_node);
         }
     }
 
     printf("%d", -1);
+    list_destroy(queue);
 
     return -1; /* No winning path found. */
     /*cycle nodes*/
@@ -483,8 +541,13 @@ int main(int argc, char **argv)
     root->father = NULL;
     root->move = -1; /* La radice non ha una mossa associata. */
     root->grid_state = copy_matrix(starting_grid);
+    root->children = list_create(); /* Inizializza la lista dei figli. */
 
     BFS(root);
+
+    /* Libera la memoria occupata dall'albero. */
+    tree_destroy(root);
+    free_matrix(starting_grid);
 
     return EXIT_SUCCESS;
 }
