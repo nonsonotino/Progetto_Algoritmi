@@ -5,10 +5,6 @@
  * Classe B
  */
 
-/* TODO: TOGLIERE, comando per compilazione
-gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -23,7 +19,7 @@ gcc -std=c90 -Wall -Wpedantic 0001029341.c -o 000102941 -lm
 #define COLS 3
 #define CELLS_NUMBER (ROWS * COLS)
 
-/* Definizione struct. */
+/* Definizione struct necessarie alla risoluzione del problema. */
 struct TreeNode;
 struct List;
 struct ListNode;
@@ -32,16 +28,16 @@ struct ListNode;
 /* Nodo del grafo degli stati di gioco. */
 typedef struct TreeNode
 {
-    int **grid_state;
-    int move; /* Mossa che ha dato la struttura corrente. */
+    int **grid_state; /* Matrice rappresentante lo stato del gioco. */
+    int move;         /* Mossa che ha dato la struttura corrente. */
     struct TreeNode *father;
-    struct List *children; /* Lista dei figli di questo nodo. */
+    struct List *children;
 } TreeNode;
 
 /* Nodo della coda di ricerca BFS */
 typedef struct ListNode
 {
-    TreeNode *val;
+    TreeNode *val; /* Puntatore al nodo dell'albero da esplorare. */
     struct ListNode *succ, *pred;
 } ListNode;
 
@@ -59,14 +55,6 @@ enum
     BLACK_HOLE,
     STAR
 };
-
-/* Indica il risultato di una mossa. */
-typedef enum
-{
-    OK,
-    WON,
-    LOST
-} Move;
 
 /* Vicini di ogni cella, 1 se la casella
    è vicina 0 altrimenti. */
@@ -105,8 +93,7 @@ int neighbours[CELLS_NUMBER][ROWS][COLS] = {
 
     {{0, 0, 0}, /* cella 8 con il suo vicinato 	*/
      {0, 1, 1},
-     {0, 1, 1}}
-};
+     {0, 1, 1}}};
 
 /* Funzioni per la gestione delle liste. */
 /* Crea un nuovo nodo della lista. */
@@ -125,7 +112,8 @@ List *list_create(void)
     List *L = (List *)malloc(sizeof(List));
     assert(L != NULL);
     L->length = 0;
-    L->sentinel = list_new_node(NULL); /* il valore contenuto nel nodo sentinella è irrilevante */
+    L->sentinel = list_new_node(NULL); /* il valore contenuto nel nodo
+                                            sentinella è irrilevante */
     return L;
 }
 
@@ -210,17 +198,6 @@ static void list_insert_after(List *L, ListNode *n, TreeNode *k)
     list_join(n, new_node);
     list_join(new_node, succ_of_n);
 #else
-    /* volendo realizzare questa funzione totalmente "a mano", senza
-       usare altre funzioni di utilità definite in questo file, si può
-       procedere come segue. */
-    succ_of_n = n->succ;
-    new_node = (ListNode *)malloc(sizeof(ListNode));
-    assert(new_node != NULL);
-    new_node->val = k;
-    new_node->pred = n;
-    new_node->succ = succ_of_n;
-    n->succ = new_node;
-    succ_of_n->pred = new_node;
 #endif
     L->length++;
 }
@@ -244,12 +221,12 @@ void list_remove(List *L, ListNode *n)
 }
 
 /* Alloca e ritona una nuova matrice 3x3. */
-int **allocateMatrix()
+int **create_matrix()
 {
     int i;
     int **new_matrix = (int **)malloc(sizeof(int *) * ROWS);
 
-    for (i =0; i < ROWS; i++)
+    for (i = 0; i < ROWS; i++)
     {
         new_matrix[i] = (int *)malloc(sizeof(int) * COLS);
     }
@@ -257,11 +234,11 @@ int **allocateMatrix()
     return new_matrix;
 }
 
-/* Copia il contenuto della matrice src nella matrice dest. */
-int **copy_matrix(int** src)
+/* Copia il contenuto della matrice passata in input. */
+int **copy_matrix(int **src)
 {
     int i, j;
-    int **dest = allocateMatrix();
+    int **dest = create_matrix();
     for (i = 0; i < ROWS; i++)
     {
         for (j = 0; j < COLS; j++)
@@ -289,15 +266,16 @@ void tree_destroy(TreeNode *root)
 {
     if (root == NULL)
         return;
-    
+
     while (root->children->length > 0)
     {
         ListNode *child_node = list_first(root->children);
         TreeNode *child = child_node->val;
         list_remove(root->children, child_node);
-        tree_destroy(child);
+        tree_destroy(child); /* Chiamata ricorsiva per liberare i figli. */
     }
 
+    /* Librea memoria relativa al nodo corrente. */
     free_matrix(root->grid_state);
     list_destroy(root->children);
     free(root);
@@ -308,7 +286,7 @@ void tree_destroy(TreeNode *root)
 int **init_grid(const char *init_file_name)
 {
     FILE *init_file = fopen(init_file_name, "r");
-    int **grid = allocateMatrix();
+    int **grid = create_matrix();
     int i, j;
     char input;
 
@@ -404,15 +382,11 @@ int **shoot(int k, int **grid)
     return new_grid;
 }
 
-/* Fa esplodere la stella nella posizione k della griglia passata. */
-
 /* Ritorna la posizione delle stelle nella configurazione passata. */
 int *find_stars(int **grid)
 {
-    /* Array dinamico contenente le posizioni delle stelle trovate. */
-    int *stars = (int*)malloc(sizeof(int) * ROWS * COLS);
-
-    /* Contatori di supporto. */
+    /* Alloco il numero massimo di stelle. */
+    int *stars = (int *)malloc(sizeof(int) * CELLS_NUMBER);
     int i, j, c = 0;
 
     /* Inizializzazione dell'array con valori non significativi. */
@@ -421,12 +395,12 @@ int *find_stars(int **grid)
         stars[i] = -1;
     }
 
-    /* Scansione della griglia per trovare le stelle. */
-    for(i = 0; i < ROWS; i++)
+    /* Cerca stelle nella griglia passata. */
+    for (i = 0; i < ROWS; i++)
     {
-        for(j = 0; j < COLS; j++)
+        for (j = 0; j < COLS; j++)
         {
-            if(grid[i][j] == STAR)
+            if (grid[i][j] == STAR)
             {
                 stars[c] = i * COLS + j; /* Calcola la posizione lineare */
                 c += 1;
@@ -450,10 +424,9 @@ int BFS(TreeNode *root)
     TreeNode *new_tree_node;
     int *stars;
     char *move_sequence;
-    int string_capacity = 100; /* Dimensione iniziale della stringa per la sequenza di mosse. */
-    
+
     /* Inizializzazione contatori. */
-    int i, k;
+    int i, k, max_moves = 0;
 
     list_add_last(queue, root);
 
@@ -464,17 +437,11 @@ int BFS(TreeNode *root)
 
         if (check_win(current_tree_node->grid_state))
         {
-            move_sequence = (char *)malloc(sizeof(char) * string_capacity);
+            move_sequence = (char *)malloc(sizeof(char) * max_moves);
 
             for (i = 0; current_tree_node->father != NULL; i++)
             {
-                if(i + 1 <= string_capacity)
-                {
-                    string_capacity *= 2; /* Raddoppia la capacità della stringa per le mosse. */
-                    move_sequence = (char *)realloc(move_sequence, sizeof(char) * string_capacity);
-                }
-
-                move_sequence[i] = current_tree_node->move; /* Converte l'indice della mossa in carattere. */
+                move_sequence[i] = current_tree_node->move;
                 current_tree_node = current_tree_node->father;
             }
 
@@ -482,7 +449,8 @@ int BFS(TreeNode *root)
             {
                 printf("%d\n", move_sequence[i - k - 1]); /* Stampa le mosse in ordine inverso. */
             }
-            
+
+            /* Libera memoria relativa alla lista dei  nodi. */
             free(move_sequence);
             list_destroy(queue);
 
@@ -490,43 +458,42 @@ int BFS(TreeNode *root)
         }
         else if (check_defeat(current_tree_node->grid_state))
         {
+            /* Path perdente, il nodo non ha figli, faccio dequeue e continuo esecuzione. */
             list_remove(queue, current_node);
         }
         else
         {
+            /* Stato intermedio, ne vittoria ne sconfitta, trovo tutte le mosse possibili
+               e creo un figlio del nodo per ognuna di esse. */
             stars = find_stars(current_tree_node->grid_state);
 
-            for(i = 0; stars[i] != -1; i++)
+            for (i = 0; stars[i] != -1; i++)
             {
                 new_tree_node = (TreeNode *)malloc(sizeof(TreeNode));
                 new_tree_node->father = current_tree_node;
                 new_tree_node->move = stars[i];
                 new_tree_node->grid_state = shoot(stars[i], current_tree_node->grid_state);
                 new_tree_node->children = list_create();
-                list_add_last(current_tree_node->children, new_tree_node);
+                list_add_last(current_tree_node->children, new_tree_node); /* Aggiungo il nuovo
+                                                                            nodo come figlio del
+                                                                            nodo corrente. */
 
                 list_add_last(queue, new_tree_node);
             }
 
             free(stars);
             list_remove(queue, current_node);
+
+            max_moves++;
         }
     }
 
     printf("%d", -1);
+
+    /* Libero memoria occupata dalla lista di esplorazione. */
     list_destroy(queue);
 
-    return -1; /* No winning path found. */
-    /*cycle nodes*/
-    /*check if node is winning*/
-    /*if it is winning find all fathers recoursively and print each move*/
-    /*if losing dequeue and continue*/
-    
-    /*if neither find all stars*/
-    /*explode each and create a new node for each move and append*/
-    /*dequeue this node and continue*/
-
-    /*if it ends without wnning return -1*/
+    return -1; /* Nessuna sequenza vincente trovata. */
 }
 
 int main(int argc, char **argv)
