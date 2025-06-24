@@ -10,7 +10,7 @@
 #include <assert.h>
 
 /* Si vuole risolvere il gioco passo passo, sfruttando una ricerda in ampiezza
-   BFS, osservando ogni possibile mossa possibile per poi ricostruirne la sequenza
+   BFS, osservando ogni mossa possibile per poi ricostruirne la sequenza
    vincente una volta trovata la prima configurazione che rispetta tali condizioni
    di vittoria. */
 
