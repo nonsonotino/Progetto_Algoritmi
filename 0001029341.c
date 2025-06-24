@@ -345,7 +345,7 @@ int check_defeat(int **grid)
     {
         for (j = 0; j < COLS; j++)
         {
-            if (grid[i][j] == BLACK_HOLE)
+            if (grid[i][j] == STAR)
                 return 0;
         }
     }
@@ -467,7 +467,7 @@ int BFS(TreeNode *root)
                e creo un figlio del nodo per ognuna di esse. */
             stars = find_stars(current_tree_node->grid_state);
 
-            for (i = 0; stars[i] != -1; i++)
+            for (i = 0; i <= CELLS_NUMBER -1 &&  stars[i] != -1; i++)
             {
                 new_tree_node = (TreeNode *)malloc(sizeof(TreeNode));
                 new_tree_node->father = current_tree_node;
